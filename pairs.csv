@@ -1,0 +1,11 @@
+sample_id,gnt_path,online_path,writer_id,char
+sample_00,D:\大创资料\xunlian2\data\raw\gnt\sample_00.gnt,D:\大创资料\xunlian2\data\raw\online\sample_00_online.csv,0,啊
+sample_01,D:\大创资料\xunlian2\data\raw\gnt\sample_01.gnt,D:\大创资料\xunlian2\data\raw\online\sample_01_online.csv,0,墨
+sample_02,D:\大创资料\xunlian2\data\raw\gnt\sample_02.gnt,D:\大创资料\xunlian2\data\raw\online\sample_02_online.csv,0,蜒
+sample_03,D:\大创资料\xunlian2\data\raw\gnt\sample_03.gnt,D:\大创资料\xunlian2\data\raw\online\sample_03_online.csv,0,薯
+sample_04,D:\大创资料\xunlian2\data\raw\gnt\sample_04.gnt,D:\大创资料\xunlian2\data\raw\online\sample_04_online.csv,0,墨
+sample_05,D:\大创资料\xunlian2\data\raw\gnt\sample_05.gnt,D:\大创资料\xunlian2\data\raw\online\sample_05_online.csv,0,薯
+sample_06,D:\大创资料\xunlian2\data\raw\gnt\sample_06.gnt,D:\大创资料\xunlian2\data\raw\online\sample_06_online.csv,0,薯
+sample_07,D:\大创资料\xunlian2\data\raw\gnt\sample_07.gnt,D:\大创资料\xunlian2\data\raw\online\sample_07_online.csv,0,角
+sample_08,D:\大创资料\xunlian2\data\raw\gnt\sample_08.gnt,D:\大创资料\xunlian2\data\raw\online\sample_08_online.csv,0,啊
+sample_09,D:\大创资料\xunlian2\data\raw\gnt\sample_09.gnt,D:\大创资料\xunlian2\data\raw\online\sample_09_online.csv,0,躲

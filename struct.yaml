@@ -1,0 +1,9 @@
+# 结构图构建与对齐配置
+struct:
+  img_size: [224, 224]
+  skeleton_method: "medial_axis"  # or "thinning"
+  node_types: ["endpoint", "branch"]
+  sigma_prior: 0.5   # 软覆盖先验 π 的 softmax 温度
+  align:
+    bbox_padding: 0.1
+    sigma_sim: 0.1   # 语义对齐 a 的 softmax 温度

@@ -1,0 +1,34 @@
+# Stage 2: L = L_mae + λ1 L_align + λ2 L_cons
+stage: 2
+name: stage2_mae_align_cons
+
+data:
+  pairs_csv: "data/raw/pairs.csv"
+  processed_dir: "data/processed/samples"
+  struct_graphs_dir: "data/processed/struct_graphs"
+  traj_dim: 5
+  img_size: [224, 224]
+
+model:
+  traj_encoder:
+    hidden_size: 128
+    num_layers: 2
+  struct_encoder:
+    hidden_size: 128
+  align_module:
+    embed_dim: 128
+  decoder:
+    pred_dim: 3
+
+train:
+  batch_size: 4
+  epochs: 25
+  lr: 1.0e-3
+  lambda_mae: 1.0
+  lambda_align: 0.5
+  lambda_cons: 0.3
+
+eval:
+  metrics: ["recon_mae", "align_kl", "align_entropy", "cons_loss"]
+
+output_dir: "outputs/runs"

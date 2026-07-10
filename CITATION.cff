@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "Structure-Constrained Self-Supervised Chinese Handwriting Quality Model"
+type: software
+authors:
+  - family-names: "Shi"
+    given-names: "Tianyi"
+    alias: "tianyi-sh"
+repository-code: "https://github.com/tianyi-sh/hanzi"
+url: "https://github.com/tianyi-sh/hanzi"
+version: 0.1.0
+date-released: 2026-07-10

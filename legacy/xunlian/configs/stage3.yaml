@@ -1,0 +1,27 @@
+# Stage 3: 质量敏感排序 - 生成劣化样本，Ranking Loss
+stage: 3
+name: stage3_rank
+
+data:
+  pairs_csv: "data/raw/pairs.csv"
+  processed_dir: "data/processed/samples"
+  traj_dim: 5
+  degrade_noise_scale: 0.3  # 劣化轨迹噪声
+
+model:
+  traj_encoder:
+    type: "lstm"
+    hidden_size: 128
+    num_layers: 2
+  score_dim: 1
+
+train:
+  batch_size: 4
+  epochs: 20
+  lr: 1e-3
+  margin: 0.5
+
+eval:
+  metrics: ["pairwise_rank_accuracy", "margin_mean"]
+
+output_dir: "outputs/runs"

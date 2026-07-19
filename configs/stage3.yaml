@@ -1,0 +1,39 @@
+# Stage 3: L = L_mae + λ1 L_align + λ2 L_cons + λ3 L_rank
+stage: 3
+name: stage3_full
+
+data:
+  pairs_csv: "data/raw/pairs.csv"
+  processed_dir: "data/processed/samples"
+  struct_graphs_dir: "data/processed/struct_graphs"
+  traj_dim: 5
+  img_size: [224, 224]
+  degrade_noise_scale: 0.3
+
+model:
+  traj_encoder:
+    hidden_size: 128
+    num_layers: 2
+  struct_encoder:
+    hidden_size: 128
+  align_module:
+    embed_dim: 128
+  decoder:
+    pred_dim: 3
+  quality_head:
+    hidden: 64
+
+train:
+  batch_size: 4
+  epochs: 20
+  lr: 1.0e-3
+  lambda_mae: 1.0
+  lambda_align: 0.5
+  lambda_cons: 0.3
+  lambda_rank: 0.5
+  rank_margin: 0.5
+
+eval:
+  metrics: ["recon_mae", "align_kl", "align_entropy", "cons_loss", "ranking_accuracy", "margin_mean"]
+
+output_dir: "outputs/runs"

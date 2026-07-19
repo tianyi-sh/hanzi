@@ -1,0 +1,31 @@
+# Stage 2: 跨模态对齐 - 图像与轨迹一致性
+stage: 2
+name: stage2_align
+
+data:
+  pairs_csv: "data/raw/pairs.csv"
+  processed_dir: "data/processed/samples"
+  img_size: 64
+  traj_dim: 5
+
+model:
+  img_encoder:
+    type: "cnn"
+    hidden: 128
+  traj_encoder:
+    type: "lstm"
+    hidden_size: 128
+    num_layers: 2
+  embed_dim: 128
+  temperature: 0.07
+
+train:
+  batch_size: 4
+  epochs: 25
+  lr: 1e-3
+  loss: "infonce"
+
+eval:
+  metrics: ["recall_at_1", "recall_at_5", "align_loss"]
+
+output_dir: "outputs/runs"

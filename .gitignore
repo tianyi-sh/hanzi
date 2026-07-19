@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Editors and operating system
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+~$*
+
+# Datasets and generated training artifacts
+data/raw/
+data/reference/
+data/processed/
+outputs/runs/
+*.pt
+*.pth
+*.ckpt
+
+# The legacy snapshot is kept locally for reference; only its source is versioned.
+legacy/xunlian/data/
+legacy/xunlian/outputs/
+
+# Binary project documents stay in the organized local folder. The repository
+# keeps a Markdown catalog in docs/README.md instead.
+docs/**/*.doc
+docs/**/*.docx
+docs/**/*.ppt
+docs/**/*.pptx
+docs/**/*.pdf
+
+# Download/archive leftovers
+*.zip
+*.rar
+*.7z
+*.downloading

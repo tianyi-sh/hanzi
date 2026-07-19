@@ -1,6 +1,12 @@
 # 结构约束自监督汉字书写质量模型
 
+[![CI](https://github.com/tianyi-sh/hanzi/actions/workflows/ci.yml/badge.svg)](https://github.com/tianyi-sh/hanzi/actions/workflows/ci.yml)
+
 基于 **README_for_Cursor_结构约束自监督项目规范** 实现的完整工程：离线 GNT 字形 + 在线轨迹 (t,x,y,f)，无人工质量标签，通过结构约束自监督三阶段训练与质量敏感排序，输出 Recon MAE、Align KL、Ranking 等指标及结构热力图、轨迹异常可视化。
+
+本仓库已从原先的根目录散放形式恢复为完整工程。主代码位于 `src/`，历史版本位于 `legacy/xunlian/`，专利、结题、答辩和软著材料位于 `docs/`。整理来源与排除项见 [ORGANIZATION.md](ORGANIZATION.md)，完整数据位置见 [DATASETS.md](DATASETS.md)。
+
+> GitHub 仓库只跟踪源码、配置、说明和轻量结果图。原始 GNT、训练产物及 Office/PDF 项目材料保留在本地整理目录中，不进入 Git 历史。
 
 ---
 
@@ -14,7 +20,7 @@
 ## 二、项目目录结构
 
 ```
-xunlian2/
+hanzi-project/
 ├── data/
 │   ├── raw/
 │   │   ├── gnt/
@@ -63,6 +69,17 @@ xunlian2/
 │       └── graph_ops.py
 ├── outputs/
 │   └── runs/
+├── assets/
+│   └── figures/
+├── docs/
+│   ├── patent/
+│   ├── project/
+│   ├── reports/
+│   ├── presentations/
+│   ├── software-copyright/
+│   └── showcase/
+├── legacy/
+│   └── xunlian/
 ├── scripts/
 │   └── prepare_data.py
 ├── run_pipeline.py
@@ -73,56 +90,56 @@ xunlian2/
 
 ## 三、数据处理规范
 
-1. **GNT 解析**（`gnt_reader.py`）  
-   - 输出：`img` tensor `[1, 224, 224]`  
+1. **GNT 解析**（`gnt_reader.py`）
+   - 输出：`img` tensor `[1, 224, 224]`
    - 灰度化 + 二值化（Otsu/阈值）+ 归一化
 
-2. **结构图构建**（`struct_builder.py` + `utils/skeleton.py`, `graph_ops.py`）  
-   - 二值图 → 骨架化（skeletonization）  
-   - 提取端点与分叉点，构建结构边  
+2. **结构图构建**（`struct_builder.py` + `utils/skeleton.py`, `graph_ops.py`）
+   - 二值图 → 骨架化（skeletonization）
+   - 提取端点与分叉点，构建结构边
    - 输出：`G_S = { nodes: [N,2], edges: list_of_edges }`，并保存至 `struct_graphs/`
 
-3. **在线轨迹处理**（`online_reader.py`）  
-   - 输入：`(t, x, y, f)`  
+3. **在线轨迹处理**（`online_reader.py`）
+   - 输入：`(t, x, y, f)`
    - 输出：`traj = [x, y, f, speed, dt]`，shape `[T, 5]`
 
 ---
 
 ## 四、对齐与结构建模
 
-1. **空间对齐**（`align_utils.py`）  
+1. **空间对齐**（`align_utils.py`）
    - 轨迹 bbox 缩放，映射到结构图坐标空间（与 224×224 图像一致）
 
-2. **软覆盖先验**  
-   - `d(i,k)` = 轨迹点到结构边 k 的平均距离  
+2. **软覆盖先验**
+   - `d(i,k)` = 轨迹点到结构边 k 的平均距离
    - `π(i,k) = softmax(-d/σ)`
 
-3. **语义对齐分布**  
+3. **语义对齐分布**
    - `a(i,k) = softmax(sim(z_S,i, z_G,k))`，在 `align_module` 中实现
 
 ---
 
 ## 五、三阶段训练流程
 
-- **Stage 1**：`L = L_mae + λ1 L_align`  
-- **Stage 2**：`L = L_mae + λ1 L_align + λ2 L_cons`  
+- **Stage 1**：`L = L_mae + λ1 L_align`
+- **Stage 2**：`L = L_mae + λ1 L_align + λ2 L_cons`
 - **Stage 3**：`L = L_mae + λ1 L_align + λ2 L_cons + λ3 L_rank`
 
 损失定义：
 
-- `L_align = KL(π || a)`  
-- `L_cons = ||z_S - Σ_k a(i,k) z_G,k||²`  
+- `L_align = KL(π || a)`
+- `L_cons = ||z_S - Σ_k a(i,k) z_G,k||²`
 - `L_rank = max(0, m - (s⁺ - s⁻))`
 
 ---
 
 ## 六、输出与评估
 
-- **Recon MAE**  
-- **Align KL**、**Align entropy**  
-- **Ranking accuracy**、**Margin mean**  
-- 结构热力图（`visualize_alignment.py`）  
-- 轨迹异常/劣化对比（`visualize_quality.py`）  
+- **Recon MAE**
+- **Align KL**、**Align entropy**
+- **Ranking accuracy**、**Margin mean**
+- 结构热力图（`visualize_alignment.py`）
+- 轨迹异常/劣化对比（`visualize_quality.py`）
 - 每次运行：固定随机种子、保存 `config`、`best` checkpoint、`metrics.json`、`logs.jsonl`
 
 ---
@@ -130,13 +147,13 @@ xunlian2/
 ## 七、快速开始
 
 ```bash
-cd D:\大创资料\xunlian2
+cd D:\大创资料\hanzi-project
 pip install -r requirements.txt
-python scripts\prepare_data.py
+python scripts\prepare_data.py --source-dir "D:\大创资料\部分实验数据"
 python run_pipeline.py
 ```
 
-- `prepare_data.py`：从 `D:\大创资料\dcshuju` 随机取 10 对 gnt + online csv 到 `data/raw`，生成 `pairs.csv`。  
+- `prepare_data.py`：从 `--source-dir` 或环境变量 `HANZI_DATA_DIR` 指定的目录随机取 10 对 GNT + 在线 CSV 到 `data/raw`，生成 `pairs.csv`。当前机器的完整数据位于 `D:\大创资料\部分实验数据`。
 - `run_pipeline.py`：构建 processed 与 struct_graphs → Stage1 → Stage2 → Stage3，结果在 `outputs/runs/run_YYYYMMDD_HHMM/`。
 
 单独评估示例：
@@ -151,7 +168,7 @@ python src/eval/eval_ranking.py --checkpoint outputs/runs/run_xxx/stage3/checkpo
 
 ## 八、工程约束
 
-- 固定随机种子（`utils/seed.py`）  
-- 每次训练将当前 config 复制到 run 目录  
-- 各阶段保存 best checkpoint  
+- 固定随机种子（`utils/seed.py`）
+- 每次训练将当前 config 复制到 run 目录
+- 各阶段保存 best checkpoint
 - 输出 `metrics.json`、`logs.jsonl`

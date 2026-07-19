@@ -19,6 +19,7 @@ python -m pip install -r requirements.txt
 ```powershell
 python -m compileall -q run_pipeline.py scripts src tests
 python -m unittest discover -s tests -v
+python -m pip check
 ```
 
 5. 在 Pull Request 中说明变更目的、数据影响和验证结果。

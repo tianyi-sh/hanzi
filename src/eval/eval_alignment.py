@@ -61,10 +61,10 @@ def eval_alignment(processed_dir, checkpoint_path, embed_dim=128, hidden_size=12
                     if edges.dim() == 1:
                         edges = edges.unsqueeze(0)
                     z_struct_list.append(struct_enc(nodes, edges))
-            max_k = max(z.size(1) for z in z_struct_list)
+            max_k = max(z.size(0) for z in z_struct_list)
             z_struct = torch.zeros(B, max_k, embed_dim)
             for b in range(B):
-                k = z_struct_list[b].size(1)
+                k = z_struct_list[b].size(0)
                 z_struct[b, :k] = z_struct_list[b]
             a = align_mod(z_traj, z_struct)
             pi = batch["pi_prior"][:, :max_k] / (batch["pi_prior"][:, :max_k].sum(1, keepdim=True) + 1e-8)

@@ -18,8 +18,10 @@ Thumbs.db
 # Datasets and generated training artifacts
 data/raw/
 data/reference/
+data/source/
 data/processed/
 outputs/runs/
+outputs/figures/
 *.pt
 *.pth
 *.ckpt

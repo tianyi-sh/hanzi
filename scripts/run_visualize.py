@@ -8,11 +8,7 @@ import torch
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath(__file__))))
 sys.path.insert(0, ROOT)
 
-# 输出目录：优先使用当前脚本所在项目下的 outputs/figures（绝对路径）
 OUTPUT_DIR = os.path.join(ROOT, "outputs", "figures")
-OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-
 SAMPLES_DIR = os.path.join(ROOT, "data", "processed", "samples")
 IMG_SHAPE = (224, 224)
 
@@ -40,10 +36,13 @@ def scale_traj_to_img(traj_xy, out_h=224, out_w=224):
     return np.column_stack([x, y])
 
 
-def main():
-    print("输出目录（绝对路径）:", OUTPUT_DIR)
-    sample_id = "sample_00"
-    path = os.path.join(SAMPLES_DIR, f"{sample_id}.pt")
+def main(sample_id="sample_00", samples_dir=SAMPLES_DIR, output_dir=OUTPUT_DIR, runs_dir=None):
+    samples_dir = os.path.abspath(samples_dir)
+    output_dir = os.path.abspath(output_dir)
+    runs_dir = os.path.abspath(runs_dir or os.path.join(ROOT, "outputs", "runs"))
+    os.makedirs(output_dir, exist_ok=True)
+    print("输出目录:", output_dir)
+    path = os.path.join(samples_dir, f"{sample_id}.pt")
     if not os.path.isfile(path):
         print("未找到 processed 样本，请先运行 run_pipeline.py")
         print("期望路径:", os.path.abspath(path))
@@ -82,7 +81,7 @@ def main():
         plt.figure(figsize=(5, 5))
         plt.imshow(canvas, cmap="hot")
         plt.axis("off")
-    _save_fig(os.path.join(OUTPUT_DIR, "struct_heatmap.png"), _draw_heatmap)
+    _save_fig(os.path.join(output_dir, "struct_heatmap.png"), _draw_heatmap)
 
     # 2. 轨迹叠加在结构图上
     def _draw_traj_on_struct(plt):
@@ -94,7 +93,7 @@ def main():
         ax.plot(traj_in_img[:, 0], traj_in_img[:, 1], "r-", alpha=0.8, label="traj")
         ax.legend()
         ax.axis("equal")
-    _save_fig(os.path.join(OUTPUT_DIR, "traj_on_struct.png"), _draw_traj_on_struct)
+    _save_fig(os.path.join(output_dir, "traj_on_struct.png"), _draw_traj_on_struct)
 
     # 3. 轨迹异常：原始 vs 加噪
     np.random.seed(42)
@@ -105,10 +104,10 @@ def main():
         plt.plot(traj_degraded[:, 0], traj_degraded[:, 1], "r--", alpha=0.7, label="Degraded")
         plt.legend()
         plt.axis("equal")
-    _save_fig(os.path.join(OUTPUT_DIR, "traj_anomaly.png"), _draw_anomaly)
+    _save_fig(os.path.join(output_dir, "traj_anomaly.png"), _draw_anomaly)
 
     # 4. 排序得分分布
-    ckpt_path = os.path.join(ROOT, "outputs", "runs")
+    ckpt_path = runs_dir
     if os.path.isdir(ckpt_path):
         runs = sorted([d for d in os.listdir(ckpt_path) if d.startswith("run_")], reverse=True)
         for r in runs:
@@ -121,7 +120,7 @@ def main():
                 def _collate(b):
                     traj = torch.nn.utils.rnn.pad_sequence([x["traj"] for x in b], batch_first=True, padding_value=0)
                     return {"traj": traj}
-                ds = StructConstraintDataset(SAMPLES_DIR)
+                ds = StructConstraintDataset(samples_dir)
                 loader = DataLoader(ds, batch_size=min(10, len(ds)), collate_fn=_collate)
                 traj_enc = build_traj_encoder(hidden_size=128, num_layers=2)
                 proj = torch.nn.Linear(128, 128)
@@ -145,30 +144,38 @@ def main():
                     plt.hist(s_g.detach().cpu().numpy(), bins=10, alpha=0.6, label="Good")
                     plt.hist(s_b.detach().cpu().numpy(), bins=10, alpha=0.6, label="Bad")
                     plt.legend()
-                _save_fig(os.path.join(OUTPUT_DIR, "ranking_scores.png"), _draw_ranking)
+                _save_fig(os.path.join(output_dir, "ranking_scores.png"), _draw_ranking)
                 break
     else:
         print("未找到 stage3 checkpoint，跳过 ranking_scores.png")
 
     # 列出最终目录内容
-    if os.path.isdir(OUTPUT_DIR):
-        files = [f for f in os.listdir(OUTPUT_DIR) if f.endswith(".png")]
+    if os.path.isdir(output_dir):
+        files = [f for f in os.listdir(output_dir) if f.endswith(".png")]
         print("当前目录下 PNG 文件:", files if files else "(无)")
 
     # 如需额外导出，可显式设置 HANZI_FIGURE_EXPORT_DIR。
     export_dir = os.environ.get("HANZI_FIGURE_EXPORT_DIR")
-    if export_dir and os.path.isdir(OUTPUT_DIR):
+    if export_dir and os.path.isdir(output_dir):
         try:
             import shutil
             export_dir = os.path.abspath(export_dir)
             os.makedirs(export_dir, exist_ok=True)
-            for f in os.listdir(OUTPUT_DIR):
+            for f in os.listdir(output_dir):
                 if f.endswith(".png"):
-                    shutil.copy2(os.path.join(OUTPUT_DIR, f), os.path.join(export_dir, f))
+                    shutil.copy2(os.path.join(output_dir, f), os.path.join(export_dir, f))
             print("已复制到额外导出目录:", export_dir)
         except Exception as e:
             print("复制到额外导出目录失败:", e)
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sample-id", default="sample_00", help="要可视化的样本 ID")
+    parser.add_argument("--samples-dir", default=SAMPLES_DIR, help="processed 样本目录")
+    parser.add_argument("--output-dir", default=OUTPUT_DIR, help="PNG 输出目录")
+    parser.add_argument("--runs-dir", help="训练运行目录，默认 outputs/runs")
+    args = parser.parse_args()
+    main(args.sample_id, args.samples_dir, args.output_dir, args.runs_dir)

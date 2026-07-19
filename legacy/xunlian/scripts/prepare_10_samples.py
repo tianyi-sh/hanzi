@@ -1,61 +1,87 @@
 # -*- coding: utf-8 -*-
-"""从 dcshuju 中随机选 10 对 gnt+online csv，复制到 data/raw 并生成 pairs.csv"""
+"""为旧版 xunlian 工程准备配对的 GNT 与在线轨迹样本。"""
+
+import argparse
+import csv
 import os
 import random
 import shutil
-import csv
 
-DCSHUJU = r"D:\大创资料\dcshuju"
-ROOT = r"D:\大创资料\xunlian"
-RAW_GNT = os.path.join(ROOT, "data", "raw", "gnt")
-RAW_ONLINE = os.path.join(ROOT, "data", "raw", "online")
-PAIRS_CSV = os.path.join(ROOT, "data", "raw", "pairs.csv")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_OUTPUT_DIR = os.path.join(ROOT, "data", "raw")
 
 
 def get_char_from_gnt(path):
     try:
-        with open(path, "rb") as f:
-            d = f.read(6)
-        if len(d) < 6:
+        with open(path, "rb") as handle:
+            data = handle.read(6)
+        if len(data) < 6:
             return ""
-        return bytes([d[4], d[5]]).decode("gb2312", errors="ignore")
-    except Exception:
+        return bytes([data[4], data[5]]).decode("gb2312", errors="ignore")
+    except OSError:
         return ""
 
 
-def main():
-    os.makedirs(RAW_GNT, exist_ok=True)
-    os.makedirs(RAW_ONLINE, exist_ok=True)
-    # 所有可配对：1..50 的 .gnt 与 _online.csv
+def default_source_dir():
+    return os.path.abspath(
+        os.environ.get("HANZI_LEGACY_DATA_DIR")
+        or os.environ.get("HANZI_DATA_DIR")
+        or os.path.join(ROOT, "data", "source")
+    )
+
+
+def main(source_dir=None, sample_count=10, seed=42):
+    source_dir = os.path.abspath(source_dir or default_source_dir())
+    if not os.path.isdir(source_dir):
+        raise FileNotFoundError(
+            f"数据目录不存在: {source_dir}\n"
+            "请使用 --source-dir、HANZI_LEGACY_DATA_DIR 或 HANZI_DATA_DIR 指定数据目录。"
+        )
     candidates = []
-    for i in range(1, 51):
-        gnt = os.path.join(DCSHUJU, f"{i}.gnt")
-        csv_path = os.path.join(DCSHUJU, f"{i}_online.csv")
-        if os.path.isfile(gnt) and os.path.isfile(csv_path):
-            candidates.append((i, gnt, csv_path))
-    chosen = random.sample(candidates, 10)
+    for index in range(1, 51):
+        gnt_path = os.path.join(source_dir, f"{index}.gnt")
+        online_path = os.path.join(source_dir, f"{index}_online.csv")
+        if os.path.isfile(gnt_path) and os.path.isfile(online_path):
+            candidates.append((gnt_path, online_path))
+    if len(candidates) < sample_count:
+        raise ValueError(
+            f"数据目录只有 {len(candidates)} 对有效样本，少于请求的 {sample_count} 对"
+        )
+
+    raw_gnt = os.path.join(DEFAULT_OUTPUT_DIR, "gnt")
+    raw_online = os.path.join(DEFAULT_OUTPUT_DIR, "online")
+    pairs_csv = os.path.join(DEFAULT_OUTPUT_DIR, "pairs.csv")
+    os.makedirs(raw_gnt, exist_ok=True)
+    os.makedirs(raw_online, exist_ok=True)
+    chosen = random.Random(seed).sample(candidates, sample_count)
     rows = []
-    for idx, (num, gnt_src, csv_src) in enumerate(chosen):
-        sample_id = f"sample_{idx:02d}"
-        gnt_dst = os.path.join(RAW_GNT, f"{sample_id}.gnt")
-        online_dst = os.path.join(RAW_ONLINE, f"{sample_id}_online.csv")
-        shutil.copy2(gnt_src, gnt_dst)
-        shutil.copy2(csv_src, online_dst)
-        char = get_char_from_gnt(gnt_dst)
+    for index, (gnt_source, online_source) in enumerate(chosen):
+        sample_id = f"sample_{index:02d}"
+        gnt_target = os.path.join(raw_gnt, f"{sample_id}.gnt")
+        online_target = os.path.join(raw_online, f"{sample_id}_online.csv")
+        shutil.copy2(gnt_source, gnt_target)
+        shutil.copy2(online_source, online_target)
         rows.append({
             "sample_id": sample_id,
-            "gnt_path": gnt_dst,
-            "online_path": online_dst,
+            "gnt_path": os.path.relpath(gnt_target, DEFAULT_OUTPUT_DIR),
+            "online_path": os.path.relpath(online_target, DEFAULT_OUTPUT_DIR),
             "writer_id": 0,
-            "char": char,
+            "char": get_char_from_gnt(gnt_target),
         })
-    with open(PAIRS_CSV, "w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["sample_id", "gnt_path", "online_path", "writer_id", "char"])
-        w.writeheader()
-        w.writerows(rows)
-    print("已复制 10 对样本到 data/raw，pairs.csv 已生成。")
+    with open(pairs_csv, "w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["sample_id", "gnt_path", "online_path", "writer_id", "char"],
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"已复制 {len(rows)} 对样本到 {DEFAULT_OUTPUT_DIR}，pairs.csv 已生成。")
 
 
 if __name__ == "__main__":
-    random.seed(42)
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source-dir", help="包含配对 GNT 与在线 CSV 的目录")
+    parser.add_argument("--sample-count", type=int, default=10, help="抽取样本数")
+    parser.add_argument("--seed", type=int, default=42, help="随机种子")
+    args = parser.parse_args()
+    main(args.source_dir, args.sample_count, args.seed)

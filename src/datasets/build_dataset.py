@@ -21,10 +21,24 @@ def build_processed_dataset(pairs_csv, processed_dir, struct_graphs_dir):
     os.makedirs(processed_dir, exist_ok=True)
     os.makedirs(struct_graphs_dir, exist_ok=True)
     with open(pairs_csv, "r", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
+        reader = csv.DictReader(f)
+        required = {"sample_id", "gnt_path", "online_path"}
+        missing_columns = required.difference(reader.fieldnames or [])
+        if missing_columns:
+            raise ValueError(f"pairs.csv 缺少字段: {sorted(missing_columns)}")
+        rows = list(reader)
+    if not rows:
+        raise ValueError("pairs.csv 不包含任何样本")
     pairs_dir = os.path.dirname(os.path.abspath(pairs_csv))
+    sample_ids = set()
+    built_count = 0
     for row in rows:
         sample_id = row["sample_id"]
+        if not sample_id:
+            raise ValueError("pairs.csv 中存在空 sample_id")
+        if sample_id in sample_ids:
+            raise ValueError(f"pairs.csv 中存在重复 sample_id: {sample_id}")
+        sample_ids.add(sample_id)
         gnt_path = row["gnt_path"]
         online_path = row["online_path"]
         if not os.path.isabs(gnt_path):
@@ -32,8 +46,11 @@ def build_processed_dataset(pairs_csv, processed_dir, struct_graphs_dir):
         if not os.path.isabs(online_path):
             online_path = os.path.normpath(os.path.join(pairs_dir, online_path))
         char = row.get("char", "")
-        if not os.path.isfile(gnt_path) or not os.path.isfile(online_path):
-            continue
+        missing_paths = [path for path in (gnt_path, online_path) if not os.path.isfile(path)]
+        if missing_paths:
+            raise FileNotFoundError(
+                f"样本 {sample_id} 缺少输入文件: {', '.join(missing_paths)}"
+            )
         img, _ = read_gnt(gnt_path, target_size=IMG_SIZE)
         traj = read_online_csv(online_path)
         traj_xy = traj[:, :2]
@@ -55,7 +72,8 @@ def build_processed_dataset(pairs_csv, processed_dir, struct_graphs_dir):
             "char": char,
             "sample_id": sample_id,
         }, os.path.join(processed_dir, f"{sample_id}.pt"))
-    return len(rows)
+        built_count += 1
+    return built_count
 
 
 if __name__ == "__main__":

@@ -77,7 +77,7 @@ def train_stage3(cfg_path, run_dir):
     )
 
     log_path = os.path.join(run_dir, "logs.jsonl")
-    best_acc = 0.0
+    best_acc = -1.0
     for ep in range(epochs):
         traj_enc.train()
         struct_enc.train()
@@ -111,7 +111,9 @@ def train_stage3(cfg_path, run_dir):
             for b in range(B):
                 k = z_struct_list[b].size(0)
                 z_struct[b, :k] = z_struct_list[b]
-            if max_k < K:
+            if max_k > K:
+                pi_prior = torch.nn.functional.pad(pi_prior, (0, max_k - K))
+            elif max_k < K:
                 z_struct = torch.nn.functional.pad(z_struct, (0, 0, 0, K - max_k))
                 max_k = K
             pi_prior = pi_prior[:, :max_k].to(traj.device) / (pi_prior[:, :max_k].sum(1, keepdim=True).to(traj.device) + 1e-8)

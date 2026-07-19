@@ -80,7 +80,7 @@ xunlian/
 │       └── metrics.py       # 各阶段评估指标计算
 │
 ├── scripts/
-│   └── prepare_10_samples.py # 从 dcshuju 随机选 10 对 gnt+csv 到 data/raw
+│   └── prepare_10_samples.py # 从外部数据目录随机选 10 对 gnt+csv 到 data/raw
 │
 └── outputs/
     └── runs/
@@ -146,13 +146,13 @@ xunlian/
 
 ### 1. 准备原始数据（若尚未准备）
 
-从你的 `dcshuju` 目录随机挑选 10 对 GNT + 在线 CSV 到本项目 `data/raw`：
+从外部数据目录随机挑选 10 对 GNT + 在线 CSV 到本项目 `data/raw`：
 
 ```bash
-python scripts/prepare_10_samples.py
+python scripts/prepare_10_samples.py --source-dir "<数据目录>"
 ```
 
-脚本会复制 10 对文件到 `data/raw/gnt/` 与 `data/raw/online/`，并生成 `data/raw/pairs.csv`。如需修改数据源路径或样本数，可编辑脚本中的 `DCSHUJU` 与 `random.sample(..., 10)`。
+脚本会复制 10 对文件到 `data/raw/gnt/` 与 `data/raw/online/`，并生成 `data/raw/pairs.csv`。也可使用 `HANZI_LEGACY_DATA_DIR` 或 `HANZI_DATA_DIR` 环境变量指定数据源，并通过 `--sample-count`、`--seed` 控制抽样。
 
 ### 2. 一键运行完整流程
 

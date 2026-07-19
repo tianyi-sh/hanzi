@@ -1,28 +1,70 @@
-# 数据位置
+# 数据说明
 
-项目使用“离线 GNT 字形 + 在线轨迹 CSV”成对数据。为避免重复占用数 GB 空间，新仓库只收纳可复现实验所需的小样本；完整数据仍保留在原位置。
+本项目依赖“GNT 文件 + 在线轨迹 CSV”的一一配对数据。干净克隆不包含原始数据、processed 张量或模型权重。
 
-## 当前机器上的数据源
+## 输入目录契约
 
-| 用途 | 原位置 | 规模 | 新仓库处理方式 |
-| --- | --- | ---: | --- |
-| 主实验数据（300 组 GNT/轨迹） | `D:\大创资料\部分实验数据` | 约 6.0 GB | 不复制；通过 `HANZI_DATA_DIR` 使用 |
-| HWDB GNT 原始分包 | `D:\大创资料\HWDB1.1trn_gnt_part01` | 约 1.2 GB | 不复制；作为外部原始数据保留 |
-| 主工程 10 组样例 | `data/raw/` | 约 210 MB | 已收纳；GNT 使用 Git LFS |
-| 已处理样本和结构图 | `data/processed/` | 可重新生成 | 本地保留，Git 忽略 |
-| 历史版本数据 | `legacy/xunlian/data/` | 约 210 MB | 本地保留，Git 忽略 |
+`scripts/prepare_data.py` 当前扫描编号 `1` 到 `50`，并匹配：
 
-PowerShell 中指定完整数据源：
+```text
+<数据目录>/
+├── 1.gnt
+├── 1_online.csv
+├── 2.gnt
+├── 2_online.csv
+└── ...
+```
+
+在线 CSV 支持以下表头：
+
+| 字段 | 含义 |
+| --- | --- |
+| `timestamp` 或 `t` | 时间戳 |
+| `x` | 横坐标 |
+| `y` | 纵坐标 |
+| `f` | 力度 |
+
+轨迹读取后转换为 `[x, y, f, speed, dt]`。当前 `gnt_reader.py` 只解析每个 GNT 文件的首条记录；完整 GNT 语料的逐记录索引和展开不在本仓库实现范围内。只有 GNT、没有对应在线 CSV 的 HWDB 分包不能直接用于当前配对流程。
+
+## 准备命令
+
+在仓库根目录运行：
 
 ```powershell
-$env:HANZI_DATA_DIR = 'D:\大创资料\部分实验数据'
+python scripts\prepare_data.py --source-dir "<数据目录>" --sample-count 10 --seed 42
+```
+
+也可使用环境变量：
+
+```powershell
+$env:HANZI_DATA_DIR = "<数据目录>"
 python scripts\prepare_data.py
 ```
 
-也可以显式传参：
+若希望把源数据放在仓库目录内，可使用本地 `data/source/`；该目录已被 Git 忽略。命令行参数优先于环境变量，环境变量优先于 `data/source/`。
 
-```powershell
-python scripts\prepare_data.py --source-dir 'D:\大创资料\部分实验数据'
-```
+## 生成的 manifest
 
-不要把 `部分实验数据.zip`、`专利相关代码附readme文件.zip` 或完整 HWDB 数据直接提交到 Git。
+命令会创建 `data/raw/pairs.csv`：
+
+| 字段 | 含义 |
+| --- | --- |
+| `sample_id` | 仓库内样本 ID |
+| `gnt_path` | 相对 `pairs.csv` 的 GNT 路径 |
+| `online_path` | 相对 `pairs.csv` 的在线轨迹路径 |
+| `writer_id` | 当前准备脚本写入 `0` |
+| `char` | 从 GNT 首记录解码的字符 |
+
+数据不足、manifest 字段缺失、样本 ID 重复或输入文件缺失时，脚本会直接报错，避免静默跳过后继续训练。
+
+## 版本控制边界
+
+以下内容只保留在本地，不提交到 Git：
+
+- `data/source/`、`data/raw/`、`data/processed/`
+- `legacy/xunlian/data/`
+- `outputs/runs/`、`outputs/figures/`
+- `*.pt`、`*.pth`、`*.ckpt`
+- 大型 GNT、Office/PDF 材料及压缩包
+
+轻量参考指标和日志位于 `outputs/reference/`；可重复生成的示例图已移至 `assets/figures/generated_examples/`。

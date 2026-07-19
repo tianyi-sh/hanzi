@@ -3,6 +3,7 @@
 训练数据不直接存入 Git 仓库。
 
 - `raw/`：由 `scripts/prepare_data.py` 从外部数据源生成。
+- `source/`：可选的仓库内本地数据源目录。
 - `processed/`：由 `run_pipeline.py` 生成的张量样本和结构图。
 - `reference/`：本地保存的原始上传样本，仅用于追溯。
 

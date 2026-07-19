@@ -1,5 +1,7 @@
 # 项目材料目录
 
+- [`PROJECT_CONTRIBUTIONS.md`](PROJECT_CONTRIBUTIONS.md)：项目贡献、创新机制及对应代码证据
+
 本地整理目录包含以下材料：
 
 - `project/`：项目申请书与案例材料

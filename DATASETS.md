@@ -62,7 +62,6 @@ python scripts\prepare_data.py
 以下内容只保留在本地，不提交到 Git：
 
 - `data/source/`、`data/raw/`、`data/processed/`
-- `legacy/xunlian/data/`
 - `outputs/runs/`、`outputs/figures/`
 - `*.pt`、`*.pth`、`*.ckpt`
 - 大型 GNT、Office/PDF 材料及压缩包

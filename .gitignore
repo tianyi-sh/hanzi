@@ -26,10 +26,6 @@ outputs/figures/
 *.pth
 *.ckpt
 
-# The legacy snapshot is kept locally for reference; only its source is versioned.
-legacy/xunlian/data/
-legacy/xunlian/outputs/
-
 # Binary project documents stay in the organized local folder. The repository
 # keeps a Markdown catalog in docs/README.md instead.
 docs/**/*.doc

@@ -6,7 +6,6 @@
 
 - `src/`、`configs/`、`scripts/`：以原 `专利相关代码附readme文件` 为主工程。该目录与远程 README 描述及远程零散文件哈希完全对应。
 - `data/`、`outputs/`：保留主工程的样例和历史结果；生成物由 `.gitignore` 排除。
-- `legacy/xunlian/`：保存早期多阶段模型版本，避免与当前结构约束模型混用。
 - `docs/`：按项目申报、专利、报告、答辩、软著、展板分类。
 - `assets/figures/`：集中存放论文和实验图表。
 - 完整原始数据不重复复制，位置和使用方法见 `DATASETS.md`。

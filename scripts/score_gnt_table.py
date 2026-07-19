@@ -18,7 +18,7 @@ NUM_LABELED = 50
 def default_source_dir():
     return os.path.abspath(
         os.environ.get("HANZI_DATA_DIR")
-        or os.path.join(os.path.dirname(ROOT), "部分实验数据")
+        or os.path.join(ROOT, "data", "source")
     )
 
 

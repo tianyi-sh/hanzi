@@ -4,6 +4,38 @@
 
 本仓库实现“离线 GNT 字形 + 在线书写轨迹”的结构约束自监督实验流程。主流程从配对数据构建字形结构图和轨迹特征，依次训练重建、结构对齐、一致性与质量排序目标，并保存指标、检查点和可解释图像。
 
+## 我完成的工作
+
+这个项目围绕“没有大规模人工质量标签时，怎样利用汉字自身结构评价在线书写轨迹”展开。我完成了从数据读取、结构建模到训练评估的完整实验链路：
+
+| 工作 | 具体实现 | 代码入口 |
+| --- | --- | --- |
+| 打通两种书写数据 | 解析离线 GNT 字形与在线 `(t, x, y, f)` 轨迹，并构建可复现的配对 manifest | [`src/datasets/`](src/datasets/)、[`scripts/prepare_data.py`](scripts/prepare_data.py) |
+| 构建汉字结构表示 | 对二值字形进行骨架化，提取端点、分叉点和结构边，将像素字形转为可学习的图表示 | [`struct_builder.py`](src/datasets/struct_builder.py)、[`graph_ops.py`](src/utils/graph_ops.py) |
+| 设计结构约束学习目标 | 将几何软覆盖先验、语义对齐分布和结构一致性组合进训练目标 | [`align_utils.py`](src/datasets/align_utils.py)、[`src/losses/`](src/losses/) |
+| 实现无标签质量排序 | 自动构造轨迹退化样本，以原始/退化样本对训练质量得分头，不依赖人工质量分数 | [`train_stage3.py`](src/trainers/train_stage3.py)、[`ranking.py`](src/losses/ranking.py) |
+| 建立完整实验闭环 | 实现三阶段训练、检查点、日志、指标评估、结果图和一键入口 | [`run_pipeline.py`](run_pipeline.py)、[`src/eval/`](src/eval/) |
+| 完成工程化与验证 | 配置化数据路径、固定抽样种子、隔离大文件，并用合成数据验证三阶段 CPU 流程 | [`tests/`](tests/)、[CI](.github/workflows/ci.yml) |
+
+更详细的“贡献—实现—证据”对应关系见 [项目贡献与创新说明](docs/PROJECT_CONTRIBUTIONS.md)。
+
+## 核心创新点
+
+1. **把字形外观转换为结构约束。** 项目不只比较图像像素，而是从离线字形骨架中提取端点、分叉点和结构边，使在线书写轨迹能够与汉字结构单元建立联系。
+2. **联合几何先验与可学习语义对齐。** 先根据轨迹到各结构边的距离构造软覆盖先验 `π(k)`，再学习轨迹时刻到结构边的对齐分布 `a(t,k)`，使用 KL 损失和结构一致性损失共同约束表示。
+3. **用自监督退化对学习质量顺序。** 在没有人工质量评分的条件下，对原始轨迹加入可控扰动生成退化样本，通过 margin ranking loss 学习“原始样本得分高于退化样本”的相对质量关系。
+4. **用多目标阶段化实验连接表示学习与质量评价。** 三个阶段依次加入重建、结构一致性和质量排序目标，让每一类约束都能单独记录与评估，而不是只输出一个不可解释的总分。
+
+这些创新点描述的是仓库当前已经实现的方法机制，不等同于已经完成公开数据集上的领先性比较或论文基准复现。
+
+## 项目展示
+
+| 字形结构提取 | 原始轨迹与自动退化轨迹 |
+| --- | --- |
+| ![GNT 字形二值化、骨架化与结构节点提取](assets/figures/gnt_skeleton_41.png) | ![原始轨迹与自动生成的退化轨迹](assets/figures/generated_examples/traj_anomaly.png) |
+
+左图展示从 GNT 字形到二值图、骨架和结构节点的处理过程；右图展示质量排序阶段使用的原始/退化轨迹对。更多图像位于 [`assets/figures/`](assets/figures/)，其中历史实验图仅作过程展示，不作为公开基准结论。
+
 ## 当前能力与边界
 
 | 状态 | 内容 |
@@ -11,8 +43,6 @@
 | 已提供 | GNT 首记录解析、在线轨迹预处理、结构图构建、三阶段 CPU 训练、重建/对齐/排序评估、结果可视化 |
 | 需要外部准备 | 配对的 GNT 与在线轨迹 CSV；完整数据不随仓库发布 |
 | 未提供 | 预训练权重、公开可下载数据集、GPU/CUDA 设备选择、完整 GNT 文件逐记录展开、可直接复现的论文基准表 |
-
-`legacy/xunlian/` 保存早期多模态方案，不属于当前主流程。旧版 Stage 4 只有配置占位，没有训练实现。
 
 ## 方法流程
 
@@ -44,8 +74,8 @@ GNT 首记录 ──> 二值字形 ──> 骨架与结构边 ─┐
 ├── tests/                   # 读取器、数据准备和 CPU 冒烟测试
 ├── assets/figures/          # 参考图与已生成示例
 ├── outputs/reference/       # 一次历史运行的轻量日志和指标
-├── legacy/xunlian/          # 早期方案快照
 ├── DATASETS.md              # 数据契约与版本控制边界
+├── docs/                    # 项目贡献说明与本地材料目录
 ├── ORGANIZATION.md          # 仓库整理来源
 └── run_pipeline.py          # 主流程入口
 ```
@@ -155,15 +185,15 @@ python -m compileall -q run_pipeline.py scripts src tests
 python -m unittest discover -s tests -v
 ```
 
-测试覆盖读取器契约、确定性数据抽样，以及使用合成数据完成 Stage 1 构建、训练、重建评估和对齐评估的 CPU 冒烟流程。相同检查由 GitHub Actions 执行。
+测试覆盖读取器契约、确定性数据抽样，以及使用合成数据完成 Stage 1–3 构建、训练、检查点保存和评估的 CPU 冒烟流程。相同检查由 GitHub Actions 执行。
 
 ## 进一步文档
 
 - [数据说明](DATASETS.md)
+- [项目贡献与创新说明](docs/PROJECT_CONTRIBUTIONS.md)
 - [整理记录](ORGANIZATION.md)
 - [贡献指南](CONTRIBUTING.md)
 - [本地项目材料目录](docs/README.md)
-- [旧版方案](legacy/xunlian/README.md)
 - [引用元数据](CITATION.cff)
 
 ## 许可证状态
